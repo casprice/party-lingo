@@ -5,12 +5,10 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import { Player } from "../../App";
 import { Word } from "../../App";
 import Potato2 from "../../assets/potato.svg";
-import "./index.less";
 import { mockWords } from "../../constants/constants";
 import { TextField } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelIcon from "@mui/icons-material/Cancel";
-import io from "socket.io-client";
 
 /**
  * @description: Base entrypoint of app
@@ -41,7 +39,7 @@ const Grid: React.FC<Props> = (props) => {
       setIsCorrect((isCorrect) => true);
       return true;
     } else {
-      setAnswer((answer) => "");
+      // setIsCorrect((isCorrect) => !isCorrect);
       setIsWrong((isWrong) => true);
       return false;
     }
@@ -58,13 +56,6 @@ const Grid: React.FC<Props> = (props) => {
       i++;
     }, 1000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const socket = io("http://127.0.0.1:8000");
-    socket.on("connect", () => {
-      console.log("connected to backend");
-    });
   }, []);
 
   return (
@@ -100,7 +91,7 @@ const Grid: React.FC<Props> = (props) => {
         </Box>
 
         <Box mb={5}>
-          <Typography variant="h3" color="#5C31D6" sx={{ fontWeight: 700 }}>
+          <Typography variant="h4">
             {countdown === 0 ? (
               <div>{currWord.chinese}</div>
             ) : (
@@ -131,92 +122,32 @@ const Grid: React.FC<Props> = (props) => {
             marginRight: "400px",
             width: 100,
             height: 100,
+            backgroundColor: "#808080",
           };
-
-          // if (player.name === activePlayer.name && countdown === 0) {
-          //   properties["backgroundColor"] = "#90EE90";
-          // }
+          if (player.name === activePlayer.name && countdown === 0) {
+            properties["backgroundColor"] = "#90EE90";
+          }
           if (index % 2 === 0) {
             properties["marginLeft"] = "400px";
           }
           return (
             <>
               <Box sx={properties}>
-                {player.name === activePlayer.name && countdown === 0 && (
-                  <Box
-                    sx={{
-                      width: 130,
-                      height: 60,
-                      marginTop: "-100px",
-                      marginLeft: "150px",
-                      position: "absolute",
-                    }}
-                  >
-                    <div className="talk-bubble tri-right border round btm-left-in">
-                      <div className="talktext">
-                        <TextField
-                          variant="standard"
-                          id="code-field"
-                          value={answer}
-                          onChange={handleAnswerChange}
-                          onKeyPress={(ev) => {
-                            console.log(`Pressed keyCode ${ev.key}`);
-                            if (ev.key === "Enter") {
-                              if (validateAnswer()) {
-                                setActivePlayer(
-                                  (activePlayer) =>
-                                    props.players[(activePlayer.idx + 1) % 4]
-                                );
-                                setAnswer((answer) => "");
-                                setCurrWord(
-                                  (currWord) =>
-                                    mockWords[(currWord.idx + 1) % 4]
-                                );
-
-                                setTimeout(() => {
-                                  setIsCorrect((isCorrect) => false);
-                                }, 1000);
-                              } else {
-                                console.log("wrong!");
-                              }
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </Box>
-                )}
-
-                <Box></Box>
-
-                <img
-                  src={require(`../../assets/cat${index}.png`)}
-                  style={{ height: 130, width: 130 }}
-                  alt="website logo"
-                />
                 <Box
                   display="flex"
                   sx={{
                     width: 100,
                     height: 20,
                     justifyContent: "space-between",
-                    marginTop: "-150px",
+                    marginTop: "-30px",
                   }}
                 >
-                  <FavoriteIcon
-                    style={{ color: "red", borderColor: "black" }}
-                  />
+                  <FavoriteIcon style={{ color: "red" }} />
                   <FavoriteIcon style={{ color: "red" }} />
                   <FavoriteIcon style={{ color: "red" }} />
                 </Box>
-                <Box sx={{ marginTop: "140px" }}>
-                  <Typography
-                    sx={{ fontWeight: 700 }}
-                    variant="h6"
-                    color="#5C31D6"
-                  >
-                    {player.name}
-                  </Typography>
+                <Box mt={5}>
+                  <Typography variant="h6">{player.name}</Typography>
                 </Box>
 
                 {player.name === activePlayer.name && countdown === 0 && (
