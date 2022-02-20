@@ -158,6 +158,47 @@ const Grid: React.FC<Props> = (props) => {
   }, [timer]);
 
   useEffect(() => {
+    const f = async () => {
+      if (timer === 0) {
+        if (players.length === 2) {
+          console.log("one player remaining");
+        }
+        setPotato((potato) => "potato2");
+
+        setTimeout(() => {
+          setPotato((potato) => "potato1");
+        }, 1000);
+
+        if (decrementPlayerLife()) {
+          setActivePlayer(
+            (activePlayer) => players[(activePlayer.idx + 1) % players.length]
+          );
+          setAnswer((answer) => "");
+
+          let givenWord = { english: "cat", chinese: "猫" };
+          setCurrWord((currWord) => givenWord);
+
+          let nextRandNum = genRandNumber(3, 8);
+          setTimer((timer) => nextRandNum);
+        } else {
+          let newPlayers: any[] = [];
+          console.log("true");
+
+          players.forEach((player) => {
+            if (player.name !== activePlayer.name) {
+              players.push(player);
+            }
+          });
+          setPlayers((players) => newPlayers);
+        }
+      }
+    };
+    f();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer]);
+
+  useEffect(() => {
     // decrementTimer();
     const socket = io("http://127.0.0.1:8000");
     socket.on("connect", () => {
