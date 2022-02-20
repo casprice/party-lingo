@@ -12,8 +12,24 @@ import { TextField } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelIcon from "@mui/icons-material/Cancel";
 import io from "socket.io-client";
+import Modal from "@mui/material/Modal";
 import Button from "@mui/material/Button";
 
+const style = {
+  position: "absolute",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 350,
+  height: 250,
+  bgcolor: "background.paper",
+  border: "4px solid #5C31D6",
+
+  p: 4,
+};
 /**
  * @description: Base entrypoint of app
  */
@@ -39,9 +55,15 @@ const Grid: React.FC<Props> = (props) => {
   const [isEnd, setIsEnd] = useState<boolean>(false);
 
   const [answer, setAnswer] = useState<string>("");
+  const [winner, setWinner] = useState<string>("");
 
   const [potato, setPotato] = useState<string>("potato1");
   const [players, setPlayers] = useState<Player[]>(mockPlayers);
+
+  const handleClose = () => {
+    setIsEnd((isEnd) => false);
+    setIsStart((isStart) => true);
+  };
 
   // const [tempAns, setTempAns] = useState<Word>({ english: "", chinese: "" });
   // const [answerVis, setAnswerVis] = useState<boolean>(false);
@@ -120,49 +142,21 @@ const Grid: React.FC<Props> = (props) => {
     const f = async () => {
       if (timer === 0) {
         if (players.length === 2) {
-          console.log("one player remaining");
-        }
-        setPotato((potato) => "potato2");
+          console.log(players);
+          setIsGame((isGame) => false);
+          setIsEnd((isEnd) => true);
 
-        setTimeout(() => {
-          setPotato((potato) => "potato1");
-        }, 1000);
-
-        if (decrementPlayerLife()) {
-          setActivePlayer(
-            (activePlayer) => players[(activePlayer.idx + 1) % players.length]
-          );
-          setAnswer((answer) => "");
-
-          let givenWord = { english: "cat", chinese: "猫" };
-          setCurrWord((currWord) => givenWord);
-
-          let nextRandNum = genRandNumber(3, 8);
-          setTimer((timer) => nextRandNum);
-        } else {
-          let newPlayers: any[] = [];
-          console.log("true");
-
+          let winningPlayer = "";
           players.forEach((player) => {
             if (player.name !== activePlayer.name) {
-              players.push(player);
+              winningPlayer = player.name;
             }
           });
-          setPlayers((players) => newPlayers);
-        }
-      }
-    };
-    f();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timer]);
-
-  useEffect(() => {
-    const f = async () => {
-      if (timer === 0) {
-        if (players.length === 2) {
-          console.log("one player remaining");
+          setWinner((winner) => winningPlayer);
+          return;
         }
+
         setPotato((potato) => "potato2");
 
         setTimeout(() => {
@@ -220,6 +214,59 @@ const Grid: React.FC<Props> = (props) => {
           marginTop: "300px",
         }}
       >
+        <Modal
+          open={isEnd}
+          onClose={handleClose}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+        >
+          <Box sx={style}>
+            <Typography id="modal-modal-title" variant="h4" color="#5C31D6">
+              {winner} Won!
+            </Typography>
+            <Box mt={3}>
+              <img
+                src={require(`../../assets/cat3.png`)}
+                style={{ height: 100, width: 100 }}
+                alt="website logo"
+              />
+            </Box>
+
+            <Box mt={4}>
+              <Button
+                onClick={() => {
+                  window.location.reload();
+                }}
+                sx={{
+                  backgroundColor: "#5C31D6",
+                  textTransform: "none",
+                  width: 150,
+                  fontSize: 20,
+                  marginRight: "10px",
+                  borderRadius: "3%",
+                }}
+                variant="contained"
+              >
+                Replay
+              </Button>
+              <Button
+                onClick={() => {
+                  window.location.reload();
+                }}
+                sx={{
+                  backgroundColor: "#5C31D6",
+                  textTransform: "none",
+                  width: 150,
+                  fontSize: 20,
+                  borderRadius: "3%",
+                }}
+                variant="contained"
+              >
+                Exit
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
         <Box
           sx={{
             display: "flex",
@@ -397,42 +444,43 @@ const Grid: React.FC<Props> = (props) => {
                     </div>
                   </Box>
                 )}
-
-                <Box></Box>
-
-                <img
-                  src={require(`../../assets/cat${index}.png`)}
-                  style={{ height: 130, width: 130 }}
-                  alt="website logo"
-                />
-                <Box
-                  display="flex"
-                  sx={{
-                    width: 100,
-                    height: 20,
-                    justifyContent: "space-between",
-                    marginTop: "-150px",
-                  }}
-                >
-                  {player.lives.map((player, index) => (
-                    <FavoriteIcon style={{ color: "red" }} />
-                  ))}
-
-                  {player.deads.map((player, index) => (
-                    <FavoriteIcon style={{ color: "#D3D3D3" }} />
-                  ))}
-
-                  {/* <FavoriteIcon style={{ color: "red" }} /> */}
-                </Box>
-                <Box sx={{ marginTop: "140px" }}>
-                  <Typography
-                    sx={{ fontWeight: 700 }}
-                    variant="h6"
-                    color="#5C31D6"
+                {!isEnd && (
+                  <img
+                    src={require(`../../assets/cat${index}.png`)}
+                    style={{ height: 130, width: 130 }}
+                    alt="website logo"
+                  />
+                )}
+                {!isEnd && (
+                  <Box
+                    display="flex"
+                    sx={{
+                      width: 100,
+                      height: 20,
+                      justifyContent: "space-between",
+                      marginTop: "-150px",
+                    }}
                   >
-                    {player.name}
-                  </Typography>
-                </Box>
+                    {player.lives.map((player, index) => (
+                      <FavoriteIcon style={{ color: "red" }} />
+                    ))}
+
+                    {player.deads.map((player, index) => (
+                      <FavoriteIcon style={{ color: "#D3D3D3" }} />
+                    ))}
+                  </Box>
+                )}
+                {!isEnd && (
+                  <Box sx={{ marginTop: "140px" }}>
+                    <Typography
+                      sx={{ fontWeight: 700 }}
+                      variant="h6"
+                      color="#5C31D6"
+                    >
+                      {player.name}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             </>
           );
