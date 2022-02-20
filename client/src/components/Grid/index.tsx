@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -6,7 +7,7 @@ import { Player } from "../../App";
 import { Word } from "../../App";
 import FocusLock from "react-focus-lock";
 import "./index.less";
-import { mockWords, mockPlayers } from "../../constants/constants";
+import { mockPlayers } from "../../constants/constants";
 import { TextField } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -20,18 +21,24 @@ interface Props {
 }
 
 const Grid: React.FC<Props> = (props) => {
+  const getRandWord = async () => {
+    const res = await axios.get(`http://localhost:8000/word`);
+    return res.data;
+  };
+
   const [activePlayer, setActivePlayer] = useState<Player>(
     props.players[Math.floor(Math.random() * props.players.length)]
   );
-  const [currWord, setCurrWord] = useState<Word>(
-    mockWords[Math.floor(Math.random() * mockWords.length)]
-  );
+  const [currWord, setCurrWord] = useState<Word>({ english: "", chinese: "" });
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [isWrong, setIsWrong] = useState<boolean>(false);
   const [answer, setAnswer] = useState<string>("");
 
   const [potato, setPotato] = useState<string>("potato1");
   const [players, setPlayers] = useState<Player[]>(mockPlayers);
+
+  // const [tempAns, setTempAns] = useState<Word>({ english: "", chinese: "" });
+  // const [answerVis, setAnswerVis] = useState<boolean>(false);
 
   const genRandNumber = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1) + min);
@@ -75,6 +82,10 @@ const Grid: React.FC<Props> = (props) => {
     } else {
       setAnswer((answer) => "");
       setIsWrong((isWrong) => true);
+      setTimeout(() => {
+        setIsWrong((isWrong) => false);
+      }, 1000);
+
       return false;
     }
   };
@@ -86,34 +97,57 @@ const Grid: React.FC<Props> = (props) => {
   };
 
   useEffect(() => {
-    if (timer === 0) {
-      setPotato((potato) => "potato2");
-      setTimeout(() => {
-        setPotato((potato) => "potato1");
-      }, 1000);
-
-      if (decrementPlayerLife()) {
-        setActivePlayer(
-          (activePlayer) =>
-            props.players[(activePlayer.idx + 1) % players.length]
-        );
-        setAnswer((answer) => "");
-        setCurrWord(
-          (currWord) => mockWords[(currWord.idx + 1) % players.length]
-        );
-        let nextRandNum = genRandNumber(3, 8);
-        setTimer((timer) => nextRandNum);
-      } else {
-        let newPlayers: any[] = [];
-
-        players.forEach((player) => {
-          if (player.name !== activePlayer.name) {
-            players.push(player);
-          }
-        });
-        setPlayers((players) => newPlayers);
+    const fetchInitWord = async () => {
+      try {
+        const res = await axios.get(`http://localhost:8000/word`);
+        const data = res.data.data;
+        setCurrWord((currWord) => data);
+        // setTempAns((tempAns) => data);
+      } catch (e) {
+        console.error(e);
       }
-    }
+    };
+    fetchInitWord();
+  }, []);
+
+  useEffect(() => {
+    const f = async () => {
+      if (timer === 0) {
+        if (players.length === 2) {
+          console.log("one player remaining");
+        }
+        setPotato((potato) => "potato2");
+
+        setTimeout(() => {
+          setPotato((potato) => "potato1");
+        }, 1000);
+
+        if (decrementPlayerLife()) {
+          setActivePlayer(
+            (activePlayer) => players[(activePlayer.idx + 1) % players.length]
+          );
+          setAnswer((answer) => "");
+
+          let givenWord = { english: "cat", chinese: "猫" };
+          setCurrWord((currWord) => givenWord);
+
+          let nextRandNum = genRandNumber(3, 8);
+          setTimer((timer) => nextRandNum);
+        } else {
+          let newPlayers: any[] = [];
+          console.log("true");
+
+          players.forEach((player) => {
+            if (player.name !== activePlayer.name) {
+              players.push(player);
+            }
+          });
+          setPlayers((players) => newPlayers);
+        }
+      }
+    };
+    f();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timer]);
 
@@ -164,6 +198,11 @@ const Grid: React.FC<Props> = (props) => {
             position: "absolute",
           }}
         >
+          {/* {answerVis && (
+            <Typography variant="h3" color="#90EE90" sx={{ fontWeight: 700 }}>
+              <div>{tempAns.english}</div>
+            </Typography>
+          )} */}
           {isWrong && <CancelIcon style={{ color: "red", fontSize: "70" }} />}
           {isCorrect && (
             <CheckCircleOutlineIcon
@@ -234,19 +273,21 @@ const Grid: React.FC<Props> = (props) => {
                             id="code-field"
                             value={answer}
                             onChange={handleAnswerChange}
-                            onKeyPress={(ev) => {
+                            onKeyPress={async (ev) => {
                               console.log(`Pressed keyCode ${ev.key}`);
                               if (ev.key === "Enter") {
                                 if (validateAnswer()) {
                                   setActivePlayer(
                                     (activePlayer) =>
-                                      props.players[(activePlayer.idx + 1) % 4]
+                                      players[
+                                        (activePlayer.idx + 1) % players.length
+                                      ]
                                   );
                                   setAnswer((answer) => "");
-                                  setCurrWord(
-                                    (currWord) =>
-                                      mockWords[(currWord.idx + 1) % 4]
-                                  );
+
+                                  let randomWord = await getRandWord();
+                                  let word = randomWord.data;
+                                  setCurrWord((currWord) => word);
 
                                   setTimeout(() => {
                                     setIsCorrect((isCorrect) => false);

@@ -16,7 +16,6 @@ export type Player = {
 };
 
 export type Word = {
-  idx: number;
   chinese: string;
   english: string;
 };
@@ -31,6 +30,7 @@ const App: React.FunctionComponent = () => {
         justifyContent: "center",
       }}
     >
+      {/* <div>no!</div> */}
       <Grid players={players}></Grid>
     </Box>
   );
