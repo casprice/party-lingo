@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import { ReactComponent as Potato } from "../../assets/potato.svg";
 import { Player } from "../../App";
+import Potato2 from "../../assets/potato.svg";
+import { mockWords } from "../../constants/constants";
 
 /**
  * @description: Base entrypoint of app
@@ -13,17 +14,23 @@ interface Props {
 }
 
 const Grid: React.FC<Props> = (props) => {
-  //   const [gamePlayers, setPlayers] = React.useState<Player[]>(props.players);
-
-  const [activePlayer, setActivePlayer] = useState<Player>(props.players[0]);
-
-  //   const [activeWord, setActiveWord] = useState < string;
+  const [activePlayer, setActivePlayer] = useState<Player>(
+    props.players[Math.floor(Math.random() * props.players.length)]
+  );
+  const [countdown, setCountdown] = useState<any>(5);
+  const [currWord, setCurrWord] = useState<string>("Start!");
 
   useEffect(() => {
     let i = 0;
     const interval = setInterval(() => {
       if (i === 1000) clearInterval(interval);
-      setActivePlayer((activePlayer) => props.players[(i + 1) % 4]);
+      if (i < 5) {
+        setCountdown((countdown: any) => countdown - 1);
+      } else {
+        setActivePlayer((activePlayer) => props.players[(i + 1) % 4]);
+        setCurrWord((currWord) => mockWords[(i + 1) % 4]);
+      }
+
       i++;
     }, 1000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -33,18 +40,31 @@ const Grid: React.FC<Props> = (props) => {
     <>
       <Box
         sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
           position: "absolute",
-          width: 100,
+          width: 200,
           height: 100,
-          marginTop: "325px",
+          marginTop: "300px",
         }}
       >
-        <Potato />
+        <Box mb={5}>
+          <Typography variant="h4">
+            {countdown === 0 ? <div>{currWord}</div> : <div>{countdown}</div>}
+          </Typography>
+        </Box>
+        <img
+          src={Potato2}
+          style={{ height: 130, width: 130 }}
+          alt="website logo"
+        />
       </Box>
       <Box
         flexWrap="wrap"
         sx={{
-          width: 1000,
+          width: 2000,
           display: "flex",
           justifyContent: "center",
         }}
@@ -55,18 +75,22 @@ const Grid: React.FC<Props> = (props) => {
             flexDirection: "column",
             alignItems: "center",
             marginTop: "200px",
-            marginRight: "200px",
+            marginRight: "400px",
             width: 100,
             height: 100,
             backgroundColor: "#808080",
           };
 
-          if (player.name === activePlayer.name) {
+          if (
+            player.name === activePlayer.name &&
+            countdown === 0 &&
+            currWord !== "Start!"
+          ) {
             properties["backgroundColor"] = "#90EE90";
           }
 
           if (index % 2 === 0) {
-            properties["marginLeft"] = "200px";
+            properties["marginLeft"] = "400px";
             return (
               <>
                 <Box sx={properties}>
