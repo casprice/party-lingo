@@ -4,9 +4,9 @@ import Typography from "@mui/material/Typography";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { Player } from "../../App";
 import { Word } from "../../App";
-import Potato2 from "../../assets/potato.svg";
+import FocusLock from "react-focus-lock";
 import "./index.less";
-import { mockWords } from "../../constants/constants";
+import { mockWords, mockPlayers } from "../../constants/constants";
 import { TextField } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -30,6 +30,9 @@ const Grid: React.FC<Props> = (props) => {
   const [isWrong, setIsWrong] = useState<boolean>(false);
   const [answer, setAnswer] = useState<string>("");
 
+  const [potato, setPotato] = useState<string>("potato1");
+  const [players, setPlayers] = useState<Player[]>(mockPlayers);
+
   const genRandNumber = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1) + min);
   };
@@ -37,6 +40,31 @@ const Grid: React.FC<Props> = (props) => {
 
   const handleAnswerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setAnswer(event.target.value);
+  };
+
+  const decrementPlayerLife = () => {
+    let newPlayers: any[] = [];
+    // let shouldUpdate = true;
+    players.forEach((player) => {
+      if (player.name === activePlayer.name) {
+        if (player.lives.length - 1 === 0) {
+          return null;
+        }
+
+        player.lives.pop();
+        player.deads.push(0);
+        let updatedPlayer = {
+          ...player,
+          lives: player.lives,
+          deads: player.deads,
+        };
+        newPlayers.push(updatedPlayer);
+      } else {
+        newPlayers.push(player);
+      }
+    });
+    setPlayers((players) => newPlayers);
+    return true;
   };
 
   const validateAnswer = () => {
@@ -59,26 +87,38 @@ const Grid: React.FC<Props> = (props) => {
 
   useEffect(() => {
     if (timer === 0) {
-      setActivePlayer(
-        (activePlayer) => props.players[(activePlayer.idx + 1) % 4]
-      );
-      setAnswer((answer) => "");
-      setCurrWord((currWord) => mockWords[(currWord.idx + 1) % 4]);
-      let nextRandNum = genRandNumber(3, 8);
-      setTimer((timer) => nextRandNum);
+      setPotato((potato) => "potato2");
+      setTimeout(() => {
+        setPotato((potato) => "potato1");
+      }, 1000);
+
+      if (decrementPlayerLife()) {
+        setActivePlayer(
+          (activePlayer) =>
+            props.players[(activePlayer.idx + 1) % players.length]
+        );
+        setAnswer((answer) => "");
+        setCurrWord(
+          (currWord) => mockWords[(currWord.idx + 1) % players.length]
+        );
+        let nextRandNum = genRandNumber(3, 8);
+        setTimer((timer) => nextRandNum);
+      } else {
+        let newPlayers: any[] = [];
+
+        players.forEach((player) => {
+          if (player.name !== activePlayer.name) {
+            players.push(player);
+          }
+        });
+        setPlayers((players) => newPlayers);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timer]);
 
   useEffect(() => {
     decrementTimer();
-    const socket = io("http://127.0.0.1:8000");
-    socket.on("connect", () => {
-      console.log("connected to backend");
-    });
-  }, []);
-
-  useEffect(() => {
     const socket = io("http://127.0.0.1:8000");
     socket.on("connect", () => {
       console.log("connected to backend");
@@ -137,11 +177,19 @@ const Grid: React.FC<Props> = (props) => {
             <div>{currWord.chinese}</div>
           </Typography>
         </Box>
-        <img
-          src={Potato2}
-          style={{ height: 130, width: 130 }}
-          alt="website logo"
-        />
+        {potato === "potato1" ? (
+          <img
+            src={require(`../../assets/${potato}.svg`)}
+            style={{ height: 130, width: 130 }}
+            alt="website logo"
+          />
+        ) : (
+          <img
+            src={require(`../../assets/${potato}.svg`)}
+            style={{ height: 150, width: 150 }}
+            alt="website logo"
+          />
+        )}
       </Box>
       <Box
         flexWrap="wrap"
@@ -151,7 +199,7 @@ const Grid: React.FC<Props> = (props) => {
           justifyContent: "center",
         }}
       >
-        {props.players.map((player, index) => {
+        {players.map((player, index) => {
           const properties: any = {
             display: "flex",
             flexDirection: "column",
@@ -162,9 +210,6 @@ const Grid: React.FC<Props> = (props) => {
             height: 100,
           };
 
-          // if (player.name === activePlayer.name && countdown === 0) {
-          //   properties["backgroundColor"] = "#90EE90";
-          // }
           if (index % 2 === 0) {
             properties["marginLeft"] = "400px";
           }
@@ -183,35 +228,37 @@ const Grid: React.FC<Props> = (props) => {
                   >
                     <div className="talk-bubble tri-right border round btm-left-in">
                       <div className="talktext">
-                        <TextField
-                          variant="standard"
-                          id="code-field"
-                          value={answer}
-                          onChange={handleAnswerChange}
-                          onKeyPress={(ev) => {
-                            console.log(`Pressed keyCode ${ev.key}`);
-                            if (ev.key === "Enter") {
-                              if (validateAnswer()) {
-                                setActivePlayer(
-                                  (activePlayer) =>
-                                    props.players[(activePlayer.idx + 1) % 4]
-                                );
-                                setAnswer((answer) => "");
-                                setCurrWord(
-                                  (currWord) =>
-                                    mockWords[(currWord.idx + 1) % 4]
-                                );
+                        <FocusLock>
+                          <TextField
+                            variant="standard"
+                            id="code-field"
+                            value={answer}
+                            onChange={handleAnswerChange}
+                            onKeyPress={(ev) => {
+                              console.log(`Pressed keyCode ${ev.key}`);
+                              if (ev.key === "Enter") {
+                                if (validateAnswer()) {
+                                  setActivePlayer(
+                                    (activePlayer) =>
+                                      props.players[(activePlayer.idx + 1) % 4]
+                                  );
+                                  setAnswer((answer) => "");
+                                  setCurrWord(
+                                    (currWord) =>
+                                      mockWords[(currWord.idx + 1) % 4]
+                                  );
 
-                                setTimeout(() => {
-                                  setIsCorrect((isCorrect) => false);
-                                }, 1000);
-                                setTimer((timer) => genRandNumber(3, 8));
-                              } else {
-                                console.log("wrong!");
+                                  setTimeout(() => {
+                                    setIsCorrect((isCorrect) => false);
+                                  }, 1000);
+                                  setTimer((timer) => genRandNumber(3, 8));
+                                } else {
+                                  console.log("wrong!");
+                                }
                               }
-                            }
-                          }}
-                        />
+                            }}
+                          />
+                        </FocusLock>
                       </div>
                     </div>
                   </Box>
@@ -233,11 +280,15 @@ const Grid: React.FC<Props> = (props) => {
                     marginTop: "-150px",
                   }}
                 >
-                  <FavoriteIcon
-                    style={{ color: "red", borderColor: "black" }}
-                  />
-                  <FavoriteIcon style={{ color: "red" }} />
-                  <FavoriteIcon style={{ color: "red" }} />
+                  {player.lives.map((player, index) => (
+                    <FavoriteIcon style={{ color: "red" }} />
+                  ))}
+
+                  {player.deads.map((player, index) => (
+                    <FavoriteIcon style={{ color: "#D3D3D3" }} />
+                  ))}
+
+                  {/* <FavoriteIcon style={{ color: "red" }} /> */}
                 </Box>
                 <Box sx={{ marginTop: "140px" }}>
                   <Typography

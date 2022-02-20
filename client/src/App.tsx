@@ -10,7 +10,8 @@ import Box from "@mui/material/Box";
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export type Player = {
   name: string;
-  lives: number;
+  lives: number[];
+  deads: number[];
   idx: number;
 };
 
