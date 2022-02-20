@@ -36,9 +36,6 @@ app.get("/", (req, res) => {
   ]);
 });
 
-app.post("/", (req, res)) => {
-  res.send(getRandomWord())
-}
 
 async function getRandomWord() {
   // The text to translate

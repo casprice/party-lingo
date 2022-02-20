@@ -23,13 +23,17 @@ const Grid: React.FC<Props> = (props) => {
   const [activePlayer, setActivePlayer] = useState<Player>(
     props.players[Math.floor(Math.random() * props.players.length)]
   );
-  const [countdown, setCountdown] = useState<any>(3);
   const [currWord, setCurrWord] = useState<Word>(
     mockWords[Math.floor(Math.random() * mockWords.length)]
   );
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [isWrong, setIsWrong] = useState<boolean>(false);
   const [answer, setAnswer] = useState<string>("");
+
+  const genRandNumber = (min: number, max: number) => {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  };
+  const [timer, setTimer] = useState<number>(genRandNumber(3, 8));
 
   const handleAnswerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setAnswer(event.target.value);
@@ -47,17 +51,31 @@ const Grid: React.FC<Props> = (props) => {
     }
   };
 
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i === 1000) clearInterval(interval);
-      if (i < 3) {
-        setCountdown((countdown: any) => countdown - 1);
-      }
-
-      i++;
+  const decrementTimer = () => {
+    setInterval(() => {
+      setTimer((timer) => timer - 1);
     }, 1000);
+  };
+
+  useEffect(() => {
+    if (timer === 0) {
+      setActivePlayer(
+        (activePlayer) => props.players[(activePlayer.idx + 1) % 4]
+      );
+      setAnswer((answer) => "");
+      setCurrWord((currWord) => mockWords[(currWord.idx + 1) % 4]);
+      let nextRandNum = genRandNumber(3, 8);
+      setTimer((timer) => nextRandNum);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer]);
+
+  useEffect(() => {
+    decrementTimer();
+    const socket = io("http://127.0.0.1:8000");
+    socket.on("connect", () => {
+      console.log("connected to backend");
+    });
   }, []);
 
   useEffect(() => {
@@ -87,6 +105,21 @@ const Grid: React.FC<Props> = (props) => {
             width: 100,
             height: 20,
             justifyContent: "center",
+            marginTop: "-550px",
+            position: "absolute",
+          }}
+        >
+          <Typography sx={{ fontWeight: 700 }} variant="h2" color="#5C31D6">
+            <div>{timer}</div>
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            display: "flex",
+            width: 100,
+            height: 20,
+            justifyContent: "center",
             marginTop: "-400px",
             position: "absolute",
           }}
@@ -101,11 +134,7 @@ const Grid: React.FC<Props> = (props) => {
 
         <Box mb={5}>
           <Typography variant="h3" color="#5C31D6" sx={{ fontWeight: 700 }}>
-            {countdown === 0 ? (
-              <div>{currWord.chinese}</div>
-            ) : (
-              <div>{countdown}</div>
-            )}
+            <div>{currWord.chinese}</div>
           </Typography>
         </Box>
         <img
@@ -142,7 +171,7 @@ const Grid: React.FC<Props> = (props) => {
           return (
             <>
               <Box sx={properties}>
-                {player.name === activePlayer.name && countdown === 0 && (
+                {player.name === activePlayer.name && (
                   <Box
                     sx={{
                       width: 130,
@@ -176,6 +205,7 @@ const Grid: React.FC<Props> = (props) => {
                                 setTimeout(() => {
                                   setIsCorrect((isCorrect) => false);
                                 }, 1000);
+                                setTimer((timer) => genRandNumber(3, 8));
                               } else {
                                 console.log("wrong!");
                               }
@@ -218,38 +248,6 @@ const Grid: React.FC<Props> = (props) => {
                     {player.name}
                   </Typography>
                 </Box>
-
-                {player.name === activePlayer.name && countdown === 0 && (
-                  <Box mt={7}>
-                    <TextField
-                      id="code-field"
-                      value={answer}
-                      onChange={handleAnswerChange}
-                      onKeyPress={(ev) => {
-                        console.log(`Pressed keyCode ${ev.key}`);
-                        if (ev.key === "Enter") {
-                          if (validateAnswer()) {
-                            setActivePlayer(
-                              (activePlayer) =>
-                                props.players[(activePlayer.idx + 1) % 4]
-                            );
-                            setAnswer((answer) => "");
-                            setCurrWord(
-                              (currWord) => mockWords[(currWord.idx + 1) % 4]
-                            );
-
-                            setTimeout(() => {
-                              setIsCorrect((isCorrect) => false);
-                            }, 1000);
-                          } else {
-                            console.log("wrong!");
-                          }
-                        }
-                      }}
-                      variant="standard"
-                    />
-                  </Box>
-                )}
               </Box>
             </>
           );
