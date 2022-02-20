@@ -11,6 +11,13 @@ import Box from "@mui/material/Box";
 export type Player = {
   name: string;
   lives: number;
+  idx: number;
+};
+
+export type Word = {
+  idx: number;
+  chinese: string;
+  english: string;
 };
 
 const App: React.FunctionComponent = () => {

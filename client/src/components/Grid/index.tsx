@@ -3,8 +3,14 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import { Player } from "../../App";
+import { Word } from "../../App";
 import Potato2 from "../../assets/potato.svg";
+import "./index.less";
 import { mockWords } from "../../constants/constants";
+import { TextField } from "@mui/material";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CancelIcon from "@mui/icons-material/Cancel";
+import io from "socket.io-client";
 
 /**
  * @description: Base entrypoint of app
@@ -17,23 +23,48 @@ const Grid: React.FC<Props> = (props) => {
   const [activePlayer, setActivePlayer] = useState<Player>(
     props.players[Math.floor(Math.random() * props.players.length)]
   );
-  const [countdown, setCountdown] = useState<any>(5);
-  const [currWord, setCurrWord] = useState<string>("Start!");
+  const [countdown, setCountdown] = useState<any>(3);
+  const [currWord, setCurrWord] = useState<Word>(
+    mockWords[Math.floor(Math.random() * mockWords.length)]
+  );
+  const [isCorrect, setIsCorrect] = useState<boolean>(false);
+  const [isWrong, setIsWrong] = useState<boolean>(false);
+  const [answer, setAnswer] = useState<string>("");
+
+  const handleAnswerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setAnswer(event.target.value);
+  };
+
+  const validateAnswer = () => {
+    if (answer === currWord.english) {
+      setIsWrong((isWrong) => false);
+      setIsCorrect((isCorrect) => true);
+      return true;
+    } else {
+      setAnswer((answer) => "");
+      setIsWrong((isWrong) => true);
+      return false;
+    }
+  };
 
   useEffect(() => {
     let i = 0;
     const interval = setInterval(() => {
       if (i === 1000) clearInterval(interval);
-      if (i < 5) {
+      if (i < 3) {
         setCountdown((countdown: any) => countdown - 1);
-      } else {
-        setActivePlayer((activePlayer) => props.players[(i + 1) % 4]);
-        setCurrWord((currWord) => mockWords[(i + 1) % 4]);
       }
 
       i++;
     }, 1000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const socket = io("http://127.0.0.1:8000");
+    socket.on("connect", () => {
+      console.log("connected to backend");
+    });
   }, []);
 
   return (
@@ -50,9 +81,31 @@ const Grid: React.FC<Props> = (props) => {
           marginTop: "300px",
         }}
       >
+        <Box
+          sx={{
+            display: "flex",
+            width: 100,
+            height: 20,
+            justifyContent: "center",
+            marginTop: "-400px",
+            position: "absolute",
+          }}
+        >
+          {isWrong && <CancelIcon style={{ color: "red", fontSize: "70" }} />}
+          {isCorrect && (
+            <CheckCircleOutlineIcon
+              style={{ color: "green", fontSize: "70" }}
+            />
+          )}
+        </Box>
+
         <Box mb={5}>
-          <Typography variant="h4">
-            {countdown === 0 ? <div>{currWord}</div> : <div>{countdown}</div>}
+          <Typography variant="h3" color="#5C31D6" sx={{ fontWeight: 700 }}>
+            {countdown === 0 ? (
+              <div>{currWord.chinese}</div>
+            ) : (
+              <div>{countdown}</div>
+            )}
           </Typography>
         </Box>
         <img
@@ -78,63 +131,96 @@ const Grid: React.FC<Props> = (props) => {
             marginRight: "400px",
             width: 100,
             height: 100,
-            backgroundColor: "#808080",
           };
 
-          if (
-            player.name === activePlayer.name &&
-            countdown === 0 &&
-            currWord !== "Start!"
-          ) {
-            properties["backgroundColor"] = "#90EE90";
-          }
-
+          // if (player.name === activePlayer.name && countdown === 0) {
+          //   properties["backgroundColor"] = "#90EE90";
+          // }
           if (index % 2 === 0) {
             properties["marginLeft"] = "400px";
-            return (
-              <>
-                <Box sx={properties}>
+          }
+          return (
+            <>
+              <Box sx={properties}>
+                {player.name === activePlayer.name && countdown === 0 && (
                   <Box
-                    display="flex"
                     sx={{
-                      width: 100,
-                      height: 20,
-                      justifyContent: "space-between",
-                      marginTop: "-30px",
+                      width: 130,
+                      height: 60,
+                      marginTop: "-100px",
+                      marginLeft: "150px",
+                      position: "absolute",
                     }}
                   >
-                    <FavoriteIcon style={{ color: "red" }} />
-                    <FavoriteIcon style={{ color: "red" }} />
-                    <FavoriteIcon style={{ color: "red" }} />
+                    <div className="talk-bubble tri-right border round btm-left-in">
+                      <div className="talktext">
+                        <TextField
+                          variant="standard"
+                          id="code-field"
+                          value={answer}
+                          onChange={handleAnswerChange}
+                          onKeyPress={(ev) => {
+                            console.log(`Pressed keyCode ${ev.key}`);
+                            if (ev.key === "Enter") {
+                              if (validateAnswer()) {
+                                setActivePlayer(
+                                  (activePlayer) =>
+                                    props.players[(activePlayer.idx + 1) % 4]
+                                );
+                                setAnswer((answer) => "");
+                                setCurrWord(
+                                  (currWord) =>
+                                    mockWords[(currWord.idx + 1) % 4]
+                                );
+
+                                setTimeout(() => {
+                                  setIsCorrect((isCorrect) => false);
+                                }, 1000);
+                              } else {
+                                console.log("wrong!");
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
                   </Box>
-                  <Box mt={5}>
-                    <Typography variant="h6">{player.name}</Typography>
-                  </Box>
-                </Box>
-              </>
-            );
-          } else {
-            return (
-              <Box sx={properties}>
+                )}
+
+                <Box></Box>
+
+                <img
+                  src={require(`../../assets/cat${index}.png`)}
+                  style={{ height: 130, width: 130 }}
+                  alt="website logo"
+                />
                 <Box
                   display="flex"
                   sx={{
                     width: 100,
                     height: 20,
                     justifyContent: "space-between",
-                    marginTop: "-30px",
+                    marginTop: "-150px",
                   }}
                 >
-                  <FavoriteIcon style={{ color: "red" }} />
+                  <FavoriteIcon
+                    style={{ color: "red", borderColor: "black" }}
+                  />
                   <FavoriteIcon style={{ color: "red" }} />
                   <FavoriteIcon style={{ color: "red" }} />
                 </Box>
-                <Box mt={5}>
-                  <Typography variant="h6">{player.name}</Typography>
+                <Box sx={{ marginTop: "140px" }}>
+                  <Typography
+                    sx={{ fontWeight: 700 }}
+                    variant="h6"
+                    color="#5C31D6"
+                  >
+                    {player.name}
+                  </Typography>
                 </Box>
               </Box>
-            );
-          }
+            </>
+          );
         })}
       </Box>
     </>
