@@ -10,10 +10,10 @@ import "./index.less";
 import { mockPlayers } from "../../constants/constants";
 import { TextField } from "@mui/material";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import CancelIcon from "@mui/icons-material/Cancel";
 import io from "socket.io-client";
 import Modal from "@mui/material/Modal";
 import Button from "@mui/material/Button";
+import HighlightOffIcon from "@mui/icons-material/HighlightOff";
 
 const style = {
   position: "absolute",
@@ -65,8 +65,8 @@ const Grid: React.FC<Props> = (props) => {
     setIsStart((isStart) => true);
   };
 
-  // const [tempAns, setTempAns] = useState<Word>({ english: "", chinese: "" });
-  // const [answerVis, setAnswerVis] = useState<boolean>(false);
+  const [tempAns, setTempAns] = useState<string>("");
+  const [answerVis, setAnswerVis] = useState<boolean>(false);
 
   const genRandNumber = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1) + min);
@@ -129,8 +129,9 @@ const Grid: React.FC<Props> = (props) => {
       try {
         const res = await axios.get(`http://localhost:8000/word`);
         const data = res.data.data;
+
         setCurrWord((currWord) => data);
-        // setTempAns((tempAns) => data);
+        setTempAns((tempAns) => data.english);
       } catch (e) {
         console.error(e);
       }
@@ -142,7 +143,6 @@ const Grid: React.FC<Props> = (props) => {
     const f = async () => {
       if (timer === 0) {
         if (players.length === 2) {
-          console.log(players);
           setIsGame((isGame) => false);
           setIsEnd((isEnd) => true);
 
@@ -170,6 +170,13 @@ const Grid: React.FC<Props> = (props) => {
           setAnswer((answer) => "");
 
           let givenWord = { english: "cat", chinese: "猫" };
+
+          setTempAns((tempAns) => currWord.english);
+          setAnswerVis((answerVis) => true);
+          setTimeout(() => {
+            setAnswerVis((answerVis) => false);
+          }, 1000);
+
           setCurrWord((currWord) => givenWord);
 
           let nextRandNum = genRandNumber(3, 8);
@@ -305,9 +312,17 @@ const Grid: React.FC<Props> = (props) => {
             position: "absolute",
           }}
         >
+          {answerVis && (
+            <Box mt={5} sx={{ display: "flex" }}>
+              <Box mr={1}>
+                <HighlightOffIcon style={{ color: "red", fontSize: "40" }} />
+              </Box>
+              <Typography variant="h4">{tempAns}</Typography>
+            </Box>
+          )}
           {isWrong && (
             <Box mt={2}>
-              <CancelIcon style={{ color: "red", fontSize: "70" }} />
+              <HighlightOffIcon style={{ color: "red", fontSize: "70" }} />
             </Box>
           )}
           {isCorrect && (
@@ -423,10 +438,12 @@ const Grid: React.FC<Props> = (props) => {
                                         (activePlayer.idx + 1) % players.length
                                       ]
                                   );
+
                                   setAnswer((answer) => "");
 
                                   let randomWord = await getRandWord();
                                   let word = randomWord.data;
+
                                   setCurrWord((currWord) => word);
 
                                   setTimeout(() => {
